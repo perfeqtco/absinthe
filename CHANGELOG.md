@@ -1,6 +1,28 @@
 # Changelog
 
 ## Unreleased
+- POTENTIALLY BREAKING Bug Fix: [Validate variable usage in nested input arguments](https://github.com/absinthe-graphql/absinthe/pull/1290).This could break incoming documents previously considered valid. Skip the Absinthe.Phase.Document.Arguments.VariableTypesMatch phase to avoid this check. See Absinthe.Pipeline on adjusting the document pipeline.
+
+## 1.7.6
+
+- Bugfix: [Handle non_null(list_of(:thing)) with null list elements properly](https://github.com/absinthe-graphql/absinthe/pull/1259)
+- Bugfix: [More non null result handling improvements](https://github.com/absinthe-graphql/absinthe/pull/1275)
+
+## 1.7.4
+
+- Feature: Support Dataloader 2.0
+
+## 1.7.4
+
+- Bug Fix: [Bugfix: multiple pushes per client for subscriptions that have a context_id](https://github.com/absinthe-graphql/absinthe/pull/1249)
+
+## 1.7.3
+
+- Bug Fix: [OTP 26 and Elixir 1.15 tweaks](https://github.com/absinthe-graphql/absinthe/pull/1253)
+- Bug Fix: [OTP 25 tweaks](https://github.com/absinthe-graphql/absinthe/pull/1253)
+- Bug Fix: [Place extra error attributes in error extensions field](https://github.com/absinthe-graphql/absinthe/pull/1215)
+
+## 1.7.2
 
 - Bug Fix: [Validate type references for invalid wrapped types](https://github.com/absinthe-graphql/absinthe/pull/1195)
 - Feature: [Add `specifiedBy` type system directive](https://github.com/absinthe-graphql/absinthe/pull/1193)
@@ -152,7 +174,7 @@ Alpha 0 note: 1.5.0 alpha is safe to use on existing schemas. However, there are
 - Complete rewrite of schema internals. This fixes a number of long standing bugs, and provides a variety of new features
 - Feature: SDL support
 - Feature: Schema decorators
-- Feature: Customizable subscription de-duplification. See: https://github.com/absinthe-graphql/absinthe/blob/master/guides/subscriptions.md#de-duplicating-updates
+- Feature: Customizable subscription de-duplification. See: https://github.com/absinthe-graphql/absinthe/blob/main/guides/subscriptions.md#de-duplicating-updates
 - Feature: Built-in `telemetry` instrumentation (https://github.com/beam-telemetry/telemetry)
 - Breaking Change: `default_value: DateTime.utc_now()` will have its time set at compile time. IE: DON'T DO THIS. It only worked by accident before anyway, and now it no longer works, which is correct.
 - Breaking change: added `node_name/0` callback to `Absinthe.Subscription.PubSub` behaviour. To retain old behaviour, implement this callback to return `Kernel.node/0`.

@@ -49,7 +49,7 @@ defmodule Absinthe.Execution.SubscriptionTest do
     @behaviour Absinthe.Subscription.Pubsub
 
     def start_link() do
-      Registry.start_link(keys: :unique, name: __MODULE__)
+      Registry.start_link(keys: :duplicate, name: __MODULE__)
     end
 
     def node_name() do
@@ -643,9 +643,7 @@ defmodule Absinthe.Execution.SubscriptionTest do
         [:absinthe, :subscription, :publish, :start],
         [:absinthe, :subscription, :publish, :stop]
       ],
-      fn event, measurements, metadata, config ->
-        send(self(), {event, measurements, metadata, config})
-      end,
+      &Absinthe.TestTelemetryHelper.send_to_pid/4,
       %{}
     )
 
@@ -657,10 +655,13 @@ defmodule Absinthe.Execution.SubscriptionTest do
                context: %{pubsub: PubSub}
              )
 
-    assert_receive {[:absinthe, :execute, :operation, :start], measurements, %{id: id}, _config}
+    assert_receive {:telemetry_event,
+                    {[:absinthe, :execute, :operation, :start], measurements, %{id: id}, _config}}
+
     assert System.convert_time_unit(measurements[:system_time], :native, :millisecond)
 
-    assert_receive {[:absinthe, :execute, :operation, :stop], _, %{id: ^id}, _config}
+    assert_receive {:telemetry_event,
+                    {[:absinthe, :execute, :operation, :stop], _, %{id: ^id}, _config}}
 
     Absinthe.Subscription.publish(PubSub, "foo", thing: client_id)
     assert_receive({:broadcast, msg})
@@ -672,10 +673,50 @@ defmodule Absinthe.Execution.SubscriptionTest do
            } == msg
 
     # Subscription events
-    assert_receive {[:absinthe, :subscription, :publish, :start], _, %{id: id}, _config}
-    assert_receive {[:absinthe, :subscription, :publish, :stop], _, %{id: ^id}, _config}
+    assert_receive {:telemetry_event,
+                    {[:absinthe, :subscription, :publish, :start], _, %{id: id}, _config}}
+
+    assert_receive {:telemetry_event,
+                    {[:absinthe, :subscription, :publish, :stop], _, %{id: ^id}, _config}}
 
     :telemetry.detach(context.test)
+  end
+
+  @query """
+  subscription {
+    otherUser { id }
+  }
+  """
+  test "de-duplicates pushes to the same context" do
+    documents =
+      Enum.map(1..5, fn _index ->
+        {:ok, doc} = run_subscription(@query, Schema, context: %{context_id: "global"})
+        doc
+      end)
+
+    # assert that all documents are the same
+    assert [document] = Enum.dedup(documents)
+
+    Absinthe.Subscription.publish(
+      PubSub,
+      %{id: "global_user_id"},
+      other_user: "*"
+    )
+
+    topic_id = document["subscribed"]
+
+    for _i <- 1..5 do
+      assert_receive(
+        {:broadcast,
+         %{
+           event: "subscription:data",
+           result: %{data: %{"otherUser" => %{"id" => "global_user_id"}}},
+           topic: ^topic_id
+         }}
+      )
+    end
+
+    refute_receive({:broadcast, _})
   end
 
   defp run_subscription(query, schema, opts \\ []) do

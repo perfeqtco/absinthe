@@ -2,13 +2,13 @@ defmodule Absinthe.Mixfile do
   use Mix.Project
 
   @source_url "https://github.com/absinthe-graphql/absinthe"
-  @version "1.7.1"
+  @version "1.7.6"
 
   def project do
     [
       app: :absinthe,
       version: @version,
-      elixir: "~> 1.10",
+      elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -30,9 +30,11 @@ defmodule Absinthe.Mixfile do
       ],
       deps: deps(),
       dialyzer: [
-        plt_core_path: "priv/plts",
+        plt_add_deps: :apps_direct,
+        plt_file: {:no_warn, "priv/plts/project.plt"},
         plt_add_apps: [:mix, :dataloader, :decimal, :ex_unit]
-      ]
+      ],
+      prune_code_paths: prune_code_paths(Mix.env())
     ]
   end
 
@@ -56,7 +58,7 @@ defmodule Absinthe.Mixfile do
       licenses: ["MIT"],
       links: %{
         Website: "https://absinthe-graphql.org",
-        Changelog: "#{@source_url}/blob/master/CHANGELOG.md",
+        Changelog: "#{@source_url}/blob/main/CHANGELOG.md",
         GitHub: @source_url
       }
     ]
@@ -71,18 +73,21 @@ defmodule Absinthe.Mixfile do
 
   defp deps do
     [
-      {:nimble_parsec, "~> 1.2.2 or ~> 1.3.0"},
+      {:nimble_parsec, "~> 1.2.2 or ~> 1.3"},
       {:telemetry, "~> 1.0 or ~> 0.4"},
-      {:dataloader, "~> 1.0.0", optional: true},
+      {:dataloader, "~> 1.0.0 or ~> 2.0", optional: true},
       {:decimal, "~> 1.0 or ~> 2.0", optional: true},
       {:opentelemetry_process_propagator, "~> 0.2.1", optional: true},
       {:ex_doc, "~> 0.22", only: :dev},
       {:benchee, ">= 1.0.0", only: :dev},
-      {:dialyxir, "~> 1.1.0", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.1", only: [:dev, :test], runtime: false},
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
       {:makeup_graphql, "~> 0.1.0", only: :dev}
     ]
   end
+
+  defp prune_code_paths(:test), do: false
+  defp prune_code_paths(_), do: true
 
   #
   # Documentation
